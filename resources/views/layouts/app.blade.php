@@ -70,6 +70,12 @@
                             </ul>
                         </li>
                     @endif
+
+                    @if (Auth::user() == null)
+                        <li><a href="{{ route('ventas.index') }}">Ventas</a></li>
+                    @elseif (Auth::user()->rol == 1)
+                        <li><a href="{{ route('ventas.index') }}">Ventas</a></li>
+                    @endif
                 </ul>
             </nav>
         </header>
