@@ -76,6 +76,24 @@
                     @elseif (Auth::user()->rol == 1)
                         <li><a href="{{ route('ventas.index') }}">Ventas</a></li>
                     @endif
+
+                    @if (Auth::user() == null)
+                        <li><a>Analisis y Reportes</a>
+                            <ul>
+                                <li><a href="{{ route('graficos.ventas') }}">Generar Reporte</a></li>
+                                <li><a href="{{ route('analisis.form') }}">Generar Analisis</a></li>
+                                <li><a href="{{ route('form') }}">Generar Graficas</a></li>
+                            </ul>
+                        </li>
+                    @elseif (Auth::user()->rol == 3)
+                        <li><a>Analisis y Reportes</a>
+                            <ul>
+                                <li><a href="{{ route('graficos.ventas') }}">Generar Reporte</a></li>
+                                <li><a href="{{ route('analisis.form') }}">Generar Analisis</a></li>
+                                <li><a href="{{ route('form') }}">Generar Graficas</a></li>
+                            </ul>
+                        </li>
+                    @endif
                 </ul>
             </nav>
         </header>
