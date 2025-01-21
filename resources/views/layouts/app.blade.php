@@ -55,6 +55,21 @@
                             </div>
                         </li>
                     @endguest
+                    @if (Auth::user() == null)
+                        <li><a class="drop">Inventarios</a>
+                            <ul>
+                                <li><a href="{{ route('insumos.index') }}">Inventarios de insumos</a></li>
+                                <li><a href="{{ route('productos.index') }}">Inventarios de productos</a></li>
+                            </ul>
+                        </li>
+                    @elseif (Auth::user()->rol == 2 || Auth::user()->rol == 3)
+                        <li><a class="drop">Inventarios</a>
+                            <ul>
+                                <li><a href="{{ route('insumos.index') }}">Inventarios de insumos</a></li>
+                                <li><a href="{{ route('productos.index') }}">Inventarios de productos</a></li>
+                            </ul>
+                        </li>
+                    @endif
                 </ul>
             </nav>
         </header>
