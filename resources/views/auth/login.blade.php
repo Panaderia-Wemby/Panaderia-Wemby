@@ -42,8 +42,9 @@
                                 <input type="email" id="email" class="form-control form-control-lg"  @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
 
                                 @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
+                                    <span class="invalid-feedback d-block" role="alert">
+                                        <strong>Las credenciales no son correctas</strong>
+
                                     </span>
                                 @enderror
                             </div>
@@ -52,8 +53,8 @@
                                 <input type="password" id="password" class="form-control form-control-lg" @error('password') is-invalid @enderror" name="password" required autocomplete="current-password">
 
                                 @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
+                                    <span class="invalid-feedback d-block" role="alert">
+                                        <strong>Las credenciales no son correctas</strong>
                                     </span>
                                 @enderror
                             </div>
@@ -66,7 +67,8 @@
                                     </a><br>
                             @endif
                             <a class="text-muted" href="#!">Terminos y Condiciones</a><br>
-                            <a class="text-muted" href="#!">Ayuda al Usuario (es pendejo) </a><br>
+                            <a class="text-muted" href="#!">Ayuda al Usuario</a><br>
+
                             <p>¿No tienes una cuenta? <a href="{{route("register")}}" class="link-info">Creala ahora</a></p>
                         </form>
                     </div>

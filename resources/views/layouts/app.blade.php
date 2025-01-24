@@ -28,11 +28,12 @@
             </div>
             <nav id="mainav" class="fl_right">
                 <ul class="clear">
-                    <li class="active"><a href="index.php">Inicio</a></li>
+
+                    <li class="active"><a href="{{ route('welcome') }}">Inicio</a></li>
                     @guest
                         @if (Route::has('login'))
                             <li class="nav-item">
-                                <a class="nav-link" href="#">{{ __('Login') }}</a>
+                                <a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
                             </li>
                         @endif
                     @else
@@ -70,13 +71,11 @@
                             </ul>
                         </li>
                     @endif
-
                     @if (Auth::user() == null)
                         <li><a href="{{ route('ventas.index') }}">Ventas</a></li>
                     @elseif (Auth::user()->rol == 1)
                         <li><a href="{{ route('ventas.index') }}">Ventas</a></li>
                     @endif
-
                     @if (Auth::user() == null)
                         <li><a>Analisis y Reportes</a>
                             <ul>
@@ -98,7 +97,6 @@
             </nav>
         </header>
     </div>
-
     <main class="py-4">
         @yield('content')
     </main>
