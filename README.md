@@ -1,7 +1,7 @@
 # Panaderia-Wemby
 
 Proyecto de Ingeniería de Software
-Integrantes de grupo:
+<b>Integrantes de grupo:</b>
 # Jhon Mario Serrano Gordillo
 # Santiago Riaño Vargas
 # Joel Andrés Sayas Carmona

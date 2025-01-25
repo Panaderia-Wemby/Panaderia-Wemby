@@ -44,6 +44,7 @@
                                 @error('email')
                                     <span class="invalid-feedback d-block" role="alert">
                                         <strong>Las credenciales no son correctas</strong>
+
                                     </span>
                                 @enderror
                             </div>
@@ -67,6 +68,7 @@
                             @endif
                             <a class="text-muted" href="#!">Terminos y Condiciones</a><br>
                             <a class="text-muted" href="#!">Ayuda al Usuario</a><br>
+
                             <p>¿No tienes una cuenta? <a href="{{route("register")}}" class="link-info">Creala ahora</a></p>
                         </form>
                     </div>
