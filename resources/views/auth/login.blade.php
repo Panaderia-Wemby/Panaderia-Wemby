@@ -36,7 +36,7 @@
                     <div class="d-flex align-items-center h-custom-2 px-5 ms-xl-4 mt-5 pt-5 pt-xl-0 mt-xl-n5">
                         <form style="width: 23rem;" method="POST" action="{{ route('login') }}">
                         @csrf
-                            <h3 class="fw-normal mb-3 pb-3" style="letter-spacing: 1px;">Iniciar Sesion</h3>
+                            <h3 class="fw-normal mb-3 pb-3" style="letter-spacing: 1px;">Iniciar Sesión</h3>
                             <div data-mdb-input-init class="form-outline mb-4">
                                 <label class="form-label" for="email">Correo</label>
                                 <input type="email" id="email" class="form-control form-control-lg"  @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
