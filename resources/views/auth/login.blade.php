@@ -81,7 +81,72 @@
                             <p>¿No tienes una cuenta? <a href="{{ route('register') }}" class="link-info">Creala
                                     ahora</a></p>
 
-                            
+                            <!-- Modal -->
+                            <div class="modal fade" id="ayuda" data-bs-backdrop="static" data-bs-keyboard="false"
+                                tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="staticBackdropLabel">Módulo de Ayuda al Usuario</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>En la Panadería Wemby, estamos comprometidos en ofrecerte el mejor
+                                                servicio. Si tienes dudas, inconvenientes o necesitas ayuda, este módulo
+                                                está diseñado para brindarte toda la información que necesitas.</p>
+
+                                            <h2>Preguntas Frecuentes (FAQ)</h2>
+                                            <p>Respuestas a las dudas más comunes de nuestros clientes:</p>
+                                            <ul>
+                                                <li><strong>¿Dónde están ubicados?</strong> Nuestra tienda principal
+                                                    está en [Tu dirección]. Consulta nuestras ubicaciones adicionales en
+                                                    nuestra sección de contacto.</li>
+                                                <li><strong>¿Cuáles son sus horarios de atención?</strong> Atendemos de
+                                                    lunes a domingo, de 6:00 a.m. a 9:00 p.m.</li>
+                                                <li><strong>¿Ofrecen servicio de domicilio?</strong> Sí, contamos con
+                                                    servicio de domicilio en las zonas habilitadas. Consulta costos y
+                                                    cobertura al realizar tu pedido.</li>
+                                                <li><strong>¿Cómo puedo personalizar un pedido?</strong> Puedes
+                                                    personalizar tus pedidos especiales comunicándote con nosotros al
+                                                    menos 48 horas antes. ¡Haremos todo lo posible para cumplir tus
+                                                    expectativas!</li>
+                                                <li><strong>¿Qué métodos de pago aceptan?</strong> Aceptamos pagos en
+                                                    efectivo, tarjetas de crédito/débito y otros métodos electrónicos
+                                                    según disponibilidad.</li>
+                                            </ul>
+
+                                            <h2>¿Necesitas más ayuda?</h2>
+                                            <p>Si no encontraste respuesta a tus inquietudes en las preguntas
+                                                frecuentes, estamos aquí para ayudarte. Puedes contactarnos a través de
+                                                los siguientes medios:</p>
+
+                                            <div class="contact-section">
+                                                <ul>
+                                                    <li><strong>Teléfono:</strong> [Tu número de contacto]</li>
+                                                    <li><strong>Correo Electrónico:</strong> <a
+                                                            href="mailto:correo@panaderiawemby.com">correo@panaderiawemby.com</a>
+                                                    </li>
+                                                    <li><strong>Formulario de contacto:</strong> Visita nuestra sección
+                                                        de <a href="/contacto">Contacto</a> para enviarnos un mensaje
+                                                        directamente.</li>
+                                                </ul>
+                                            </div>
+
+                                            <h2>Reclamos y Sugerencias</h2>
+                                            <p>Tu opinión es muy importante para nosotros. Si deseas enviar un reclamo o
+                                                sugerencia, puedes hacerlo a través de nuestro formulario en línea o
+                                                directamente en nuestra tienda física. Nos comprometemos a atender tus
+                                                solicitudes en un plazo máximo de 48 horas hábiles.</p>
+
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary"
+                                                data-bs-dismiss="modal">Cerrar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
 
                             <!-- Modal Terminos -->
