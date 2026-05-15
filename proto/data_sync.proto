@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package panaderia.grpc;
+
+// ============================================================
+// Servicio de Sincronización de Datos - Comunicación entre nodos
+// ============================================================
+
+message SyncRequest {
+    string resource_type = 1;    // "producto", "insumo", "venta", etc.
+    string action = 2;           // "create", "update", "delete"
+    string node_id = 3;          // ID del nodo origen
+    int64 timestamp = 4;         // Timestamp de la acción
+    bytes data = 5;              // JSON serializado del recurso
+}
+
+message SyncResponse {
+    bool success = 1;
+    string message = 2;
+    string node_id = 3;
+    int64 sync_timestamp = 4;
+}
+
+message HealthCheckRequest {
+    string node_id = 1;
+}
+
+message HealthCheckResponse {
+    string status = 1;           // "healthy", "degraded", "unhealthy"
+    int32 load = 2;              // Porcentaje de carga (0-100)
+    int64 timestamp = 3;
+    int32 active_connections = 4;
+}
+
+message DatabaseSyncRequest {
+    string table = 1;
+    string query_type = 2;       // "select", "insert", "update", "delete"
+    bytes query_data = 3;        // JSON con los parámetros
+    string requesting_node = 4;
+}
+
+message DatabaseSyncResponse {
+    bool success = 1;
+    bytes result_data = 2;       // JSON con el resultado
+    string message = 3;
+    string executed_on_node = 4; // Nodo que ejecutó la query
+}
+
+// ============================================================
+// Servicio RPC
+// ============================================================
+service DataSync {
+    // Sincronizar cambios entre nodos
+    rpc SyncData (SyncRequest) returns (SyncResponse);
+    
+    // Health check entre nodos
+    rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
+    
+    // Sincronización de consultas DB
+    rpc QuerySync (DatabaseSyncRequest) returns (DatabaseSyncResponse);
+}

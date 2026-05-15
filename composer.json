@@ -10,7 +10,9 @@
         "laravel/framework": "^11.9",
         "laravel/tinker": "^2.9",
         "laravel/ui": "^4.5",
-        "laraveldaily/laravel-charts": "^0.2.3"
+        "laraveldaily/laravel-charts": "^0.2.3",
+        "google/protobuf": "^3.23",
+        "grpc/grpc": "^1.60"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

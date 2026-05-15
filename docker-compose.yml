@@ -1,0 +1,147 @@
+version: '3.9'
+
+services:
+  # ============================================================
+  # NODO 1 - APP + PHP-FPM
+  # ============================================================
+  app1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app-nodo1
+    environment:
+      APP_NAME: "Panaderia-Wemby"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: "http://localhost"
+      APP_KEY: "base64:+i8mPNFyWvBKsJp9LxKzQ0m3W2V5X8Y1Z4A7B0C3D6E="
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: sd_app
+      DB_USERNAME: sdapp
+      DB_PASSWORD: sdapppass
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: redispass
+      REDIS_PORT: 6379
+      GRPC_HOST: "0.0.0.0"
+      GRPC_PORT: "50051"
+    ports:
+      - "9000:9000"
+      - "50051:50051"
+    volumes:
+      - .:/var/www/html
+      - ./docker/php-fpm.conf:/usr/local/etc/php-fpm.d/www.conf:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - sd_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "php", "-v"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================
+  # NGINX - Load Balancer / Reverse Proxy
+  # ============================================================
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-lb
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/laravel.conf:/etc/nginx/conf.d/laravel.conf:ro
+    depends_on:
+      - app1
+    networks:
+      - sd_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================
+  # MYSQL - Base de Datos
+  # ============================================================
+  mysql:
+    image: mariadb:10.11
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: sd_app
+      MYSQL_USER: sdapp
+      MYSQL_PASSWORD: sdapppass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - sd_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================
+  # REDIS - Cache/Session/Queue
+  # ============================================================
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    command: redis-server --requirepass redispass --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - sd_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redispass", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================
+  # PhpMyAdmin
+  # ============================================================
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: sdapp
+      PMA_PASSWORD: sdapppass
+      PMA_PORT: 3306
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql
+    networks:
+      - sd_network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  sd_network:
+    driver: bridge

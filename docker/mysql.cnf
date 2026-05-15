@@ -1,0 +1,90 @@
+# Configuración MySQL/MariaDB Galera para SD distribuido
+# Adaptado de: https://mariadb.com/docs/reference/mdb/system-variables/wsrep_provider_options/
+
+[mysqld]
+# ============================================================
+# Configuración base
+# ============================================================
+pid-file = /var/run/mysqld/mysqld.pid
+socket = /var/run/mysqld/mysqld.sock
+datadir = /var/lib/mysql
+log-error = /var/log/mysql/error.log
+bind-address = 0.0.0.0
+max_connections = 500
+max_allowed_packet = 256M
+thread_stack = 192K
+thread_cache_size = 8
+myisam_recover_options = BACKUP
+key_buffer_size = 16M
+table_open_cache = 4000
+sort_buffer_size = 512K
+bulk_insert_buffer_size = 16M
+tmp_table_size = 32M
+max_heap_table_size = 32M
+
+# ============================================================
+# Replicación Binaria (Galera requirement)
+# ============================================================
+log_bin = mysql-bin
+binlog_format = ROW
+server-id = 1
+relay-log = mysql-relay-bin
+relay-log-index = mysql-relay-bin.index
+log_slave_updates = ON
+
+# ============================================================
+# InnoDB (requerido para Galera)
+# ============================================================
+default-storage-engine = InnoDB
+innodb_autoinc_lock_mode = 2
+innodb_flush_log_at_trx_commit = 0
+innodb_buffer_pool_size = 512M
+innodb_log_file_size = 100M
+innodb_file_per_table = 1
+innodb_flush_method = O_DIRECT
+innodb_lock_wait_timeout = 50
+
+# ============================================================
+# Galera Cluster Configuration
+# ============================================================
+# Activar soporte Galera
+wsrep_on = ON
+wsrep_provider = /usr/lib/galera/libgalera_smm.so
+
+# Nombre del cluster (igual en todos los nodos)
+wsrep_cluster_name = "sd_galera_cluster"
+
+# Dirección del cluster (todos los nodos, separados por coma)
+# Reemplazar con IPs reales: gcomm://nodo1_ip,nodo2_ip,nodo3_ip
+wsrep_cluster_address = "gcomm://mysql"
+
+# Dirección y puerto de este nodo
+# Reemplazar con IP del nodo actual
+wsrep_node_address = "mysql:3306"
+
+# Nombre del nodo (único en el cluster)
+wsrep_node_name = "nodo1"
+
+# Método de sincronización estatal
+wsrep_sst_method = rsync
+
+# Usuario y contraseña para SST (sincronización entre nodos)
+wsrep_sst_auth = "sdapp:sdapppass"
+
+# Otras configuraciones Galera
+wsrep_slave_threads = 4
+wsrep_certify_nonPK = ON
+wsrep_max_ws_rows = 131072
+wsrep_max_ws_size = 1073741824
+wsrep_retry_autocommit = 3
+wsrep_auto_increment_control = ON
+
+[mysqldump]
+quick
+quote-names
+max_allowed_packet = 16M
+
+[mysql]
+
+[isamchk]
+key_buffer_size = 16M
