@@ -159,7 +159,20 @@ network:
 EOF
 
     chmod 600 "$netplan_file"
-    netplan apply
+
+    # FIX 7: En contenedores LXC (Proxmox) udevd no corre, por lo que
+    # "netplan apply" falla con "udevadm control --reload" → exit 1.
+    # Se detecta si es contenedor y se aplica la red de forma alternativa:
+    # netplan genera la config y systemd-networkd la carga sin udev.
+    netplan generate
+
+    if systemd-detect-virt --container &>/dev/null; then
+        log_warning "Entorno contenedor detectado (LXC/Docker) — aplicando red sin udev"
+        systemctl restart systemd-networkd
+    else
+        netplan apply
+    fi
+
     sleep 2
 
     # Verificar conectividad
