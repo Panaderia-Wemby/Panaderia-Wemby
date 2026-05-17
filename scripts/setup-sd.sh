@@ -2,7 +2,7 @@
 
 ################################################################################
 # Script de Instalación Automatizado - Sistema Distribuido Panadería Wemby
-# 
+#
 # Uso:
 #   sudo ./setup-sd.sh --node 1 --ip 192.168.1.11 --gateway 192.168.1.1
 #   sudo ./setup-sd.sh --node 2 --ip 192.168.1.12 --gateway 192.168.1.1
@@ -125,10 +125,10 @@ EOF
 # ============================================================
 update_system() {
     log_info "=== FASE 1: Actualizando sistema ==="
-    
+
     apt update
     apt upgrade -y
-    
+
     log_success "Sistema actualizado"
 }
 
@@ -137,10 +137,12 @@ update_system() {
 # ============================================================
 configure_network() {
     log_info "=== FASE 2: Configurando red estática ==="
-    
+
     local netplan_file="/etc/netplan/00-installer-config.yaml"
-    local nameserver="8.8.8.8 1.1.1.1"
-    
+
+    # FIX 1: gateway4 está deprecado en Ubuntu 22+; usar routes.
+    # FIX 2: nameserver era una sola cadena "8.8.8.8 1.1.1.1" → YAML inválido.
+    # FIX 3: chmod 600 evita el warning de permisos de netplan.
     cat > "$netplan_file" << EOF
 network:
   version: 2
@@ -149,16 +151,19 @@ network:
       dhcp4: no
       addresses:
         - $NODE_IP/24
-      gateway4: $GATEWAY_IP
+      routes:
+        - to: default
+          via: $GATEWAY_IP
       nameservers:
-        addresses: [$nameserver]
+        addresses: [8.8.8.8, 1.1.1.1]
 EOF
 
+    chmod 600 "$netplan_file"
     netplan apply
     sleep 2
-    
+
     # Verificar conectividad
-    if ping -c 1 $GATEWAY_IP > /dev/null 2>&1; then
+    if ping -c 1 "$GATEWAY_IP" > /dev/null 2>&1; then
         log_success "Configuración de red completada: $NODE_IP"
     else
         log_error "No hay conectividad con gateway $GATEWAY_IP"
@@ -171,7 +176,7 @@ EOF
 # ============================================================
 install_dependencies() {
     log_info "=== FASE 3: Instalando dependencias ==="
-    
+
     apt install -y \
         nginx \
         php${PHP_VERSION}-fpm \
@@ -193,7 +198,7 @@ install_dependencies() {
         htop \
         net-tools \
         wget
-    
+
     log_success "Dependencias instaladas"
 }
 
@@ -202,13 +207,13 @@ install_dependencies() {
 # ============================================================
 install_composer() {
     log_info "=== FASE 4: Instalando Composer ==="
-    
+
     if ! command -v composer &> /dev/null; then
         curl -sS https://getcomposer.org/installer | php
         mv composer.phar /usr/local/bin/composer
         chmod +x /usr/local/bin/composer
     fi
-    
+
     log_success "Composer instalado: $(composer --version)"
 }
 
@@ -217,11 +222,11 @@ install_composer() {
 # ============================================================
 prepare_app_directory() {
     log_info "=== FASE 5: Preparando directorio de la app ==="
-    
+
     mkdir -p "$APP_PATH"
     chown -R www-data:www-data "$APP_PATH"
     chmod -R 755 "$APP_PATH"
-    
+
     log_success "Directorio preparado: $APP_PATH"
 }
 
@@ -230,21 +235,22 @@ prepare_app_directory() {
 # ============================================================
 configure_php_fpm() {
     log_info "=== FASE 6: Configurando PHP-FPM ==="
-    
+
     local php_conf="/etc/php/${PHP_VERSION}/fpm/pool.d/www.conf"
-    
+
     # Escuchar en red (para balance entre nodos)
     sed -i 's/^listen = .*$/listen = 0.0.0.0:9000/' "$php_conf"
-    
-    # Optimizaciones
-    sed -i 's/^pm\.max_children =.*/pm.max_children = 20/' "$php_conf"
-    sed -i 's/^pm\.start_servers =.*/pm.start_servers = 5/' "$php_conf"
-    sed -i 's/^pm\.min_spare_servers =.*/pm.min_spare_servers = 3/' "$php_conf"
-    sed -i 's/^pm\.max_spare_servers =.*/pm.max_spare_servers = 10/' "$php_conf"
-    
+
+    # FIX 4: Los parámetros pm.* pueden estar comentados (#pm.max_children).
+    # Se descomenta la línea si existe comentada, luego se reemplaza el valor.
+    sed -i 's/^;*pm\.max_children\s*=.*/pm.max_children = 20/' "$php_conf"
+    sed -i 's/^;*pm\.start_servers\s*=.*/pm.start_servers = 5/' "$php_conf"
+    sed -i 's/^;*pm\.min_spare_servers\s*=.*/pm.min_spare_servers = 3/' "$php_conf"
+    sed -i 's/^;*pm\.max_spare_servers\s*=.*/pm.max_spare_servers = 10/' "$php_conf"
+
     systemctl restart php${PHP_VERSION}-fpm
     systemctl enable php${PHP_VERSION}-fpm
-    
+
     log_success "PHP-FPM configurado y reiniciado"
 }
 
@@ -253,9 +259,9 @@ configure_php_fpm() {
 # ============================================================
 configure_nginx() {
     log_info "=== FASE 7: Configurando Nginx ==="
-    
+
     local nginx_conf="/etc/nginx/sites-available/laravel"
-    
+
     cat > "$nginx_conf" << 'EOF'
 upstream php_cluster {
     server 192.168.1.11:9000 max_fails=3 fail_timeout=20s;
@@ -298,29 +304,30 @@ EOF
 
     ln -sf /etc/nginx/sites-available/laravel /etc/nginx/sites-enabled/
     rm -f /etc/nginx/sites-enabled/default
-    
+
     nginx -t
     systemctl restart nginx
     systemctl enable nginx
-    
+
     log_success "Nginx configurado"
 }
 
 # ============================================================
-# FASE 8: Configurar MySQL (si es nodo1)
+# FASE 8: Configurar MySQL / MariaDB + Galera (todos los nodos)
 # ============================================================
 configure_mysql() {
-    log_info "=== FASE 8: Configurando MySQL ==="
-    
-    # Instalar MariaDB con soporte Galera
+    log_info "=== FASE 8: Configurando MariaDB/Galera ==="
+
+    # Instala en los 3 nodos; la configuración del cluster Galera
+    # (wsrep_cluster_address, etc.) debe hacerse manualmente después.
     apt install -y software-properties-common
-    
+
     # Agregar repositorio MariaDB
     curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
-    
+
     apt update
     apt install -y mariadb-server galera-4
-    
+
     log_success "MariaDB/Galera instalado"
 }
 
@@ -329,20 +336,37 @@ configure_mysql() {
 # ============================================================
 configure_redis() {
     log_info "=== FASE 9: Configurando Redis ==="
-    
-    # Configuración para todos los nodos
-    cat >> /etc/redis/redis.conf << EOF
 
-# Configuración para Sentinel
-bind 0.0.0.0
-port 6379
-requirepass $REDIS_PASSWORD
-masterauth $REDIS_PASSWORD
-EOF
+    local redis_conf="/etc/redis/redis.conf"
+
+    # FIX 5: El original usaba "cat >>" que acumula duplicados en cada
+    # ejecución. Además, "bind 0.0.0.0" conflictúa con la directiva
+    # "bind 127.0.0.1" ya existente. Se usan sed para reemplazar en sitio
+    # y se añaden sólo las directivas que no existen aún.
+
+    # Reemplazar bind existente
+    sed -i 's/^bind .*/bind 0.0.0.0/' "$redis_conf"
+
+    # Asegurar puerto
+    sed -i 's/^port .*/port 6379/' "$redis_conf"
+
+    # requirepass: reemplazar si existe, agregar si no
+    if grep -q "^requirepass" "$redis_conf"; then
+        sed -i "s/^requirepass .*/requirepass $REDIS_PASSWORD/" "$redis_conf"
+    else
+        echo "requirepass $REDIS_PASSWORD" >> "$redis_conf"
+    fi
+
+    # masterauth: reemplazar si existe, agregar si no
+    if grep -q "^masterauth" "$redis_conf"; then
+        sed -i "s/^masterauth .*/masterauth $REDIS_PASSWORD/" "$redis_conf"
+    else
+        echo "masterauth $REDIS_PASSWORD" >> "$redis_conf"
+    fi
 
     systemctl restart redis-server
     systemctl enable redis-server
-    
+
     log_success "Redis configurado"
 }
 
@@ -351,7 +375,7 @@ EOF
 # ============================================================
 configure_chrony() {
     log_info "=== FASE 10: Configurando Chrony (NTP) ==="
-    
+
     if [ "$NODE_ID" = "1" ]; then
         # Nodo 1: Actúa como servidor NTP
         cat > /etc/chrony/chrony.conf << 'EOF'
@@ -374,10 +398,10 @@ rtcsync
 logdir /var/log/chrony
 EOF
     fi
-    
+
     systemctl restart chrony
     systemctl enable chrony
-    
+
     log_success "Chrony configurado"
 }
 
@@ -386,9 +410,9 @@ EOF
 # ============================================================
 configure_keepalived() {
     log_info "=== FASE 11: Configurando Keepalived (VIP) ==="
-    
+
     mkdir -p /etc/keepalived
-    
+
     # Script de health check
     cat > /etc/keepalived/check_nginx.sh << 'EOF'
 #!/bin/bash
@@ -400,11 +424,11 @@ else
 fi
 EOF
     chmod +x /etc/keepalived/check_nginx.sh
-    
-    # Configuración de Keepalived
+
+    # Determinar prioridad y estado según el nodo
     local priority=100
     local state="MASTER"
-    
+
     if [ "$NODE_ID" = "2" ]; then
         priority=90
         state="BACKUP"
@@ -412,7 +436,15 @@ EOF
         priority=80
         state="BACKUP"
     fi
-    
+
+    # FIX 6: La interpolación vacía "$( echo "" )" dejaba una línea en blanco
+    # sucia dentro del bloque vrrp_instance. Se usa una variable para el valor
+    # opcional y se incluye sólo cuando corresponde.
+    local nopreempt_line=""
+    if [ "$NODE_ID" != "1" ]; then
+        nopreempt_line="    nopreempt"
+    fi
+
     cat > /etc/keepalived/keepalived.conf << EOF
 vrrp_script check_nginx {
     script "/etc/keepalived/check_nginx.sh"
@@ -428,7 +460,7 @@ vrrp_instance VI_1 {
     virtual_router_id 51
     priority $priority
     advert_int 1
-    $([ "$NODE_ID" != "1" ] && echo "nopreempt" || echo "")
+$nopreempt_line
 
     authentication {
         auth_type PASS
@@ -447,7 +479,7 @@ EOF
 
     systemctl restart keepalived
     systemctl enable keepalived
-    
+
     log_success "Keepalived configurado (prioridad: $priority)"
 }
 
@@ -456,9 +488,9 @@ EOF
 # ============================================================
 configure_supervisor() {
     log_info "=== FASE 12: Configurando Supervisor ==="
-    
+
     mkdir -p /etc/supervisor/conf.d
-    
+
     cat > /etc/supervisor/conf.d/laravel-worker.conf << 'EOF'
 [program:laravel-worker]
 process_name=%(program_name)s_%(process_num)02d
@@ -475,7 +507,7 @@ EOF
 
     systemctl restart supervisor
     systemctl enable supervisor
-    
+
     log_success "Supervisor configurado"
 }
 
@@ -484,7 +516,7 @@ EOF
 # ============================================================
 print_summary() {
     log_info "=== RESUMEN DE CONFIGURACIÓN ==="
-    
+
     echo ""
     echo "Node ID:           $NODE_ID"
     echo "IP Estática:       $NODE_IP"
@@ -493,24 +525,24 @@ print_summary() {
     echo "PHP Version:       $PHP_VERSION"
     echo "App Path:          $APP_PATH"
     echo ""
-    
+
     # Verificar servicios
     echo "Estado de servicios:"
     echo -n "  PHP-FPM:         "
     systemctl is-active php${PHP_VERSION}-fpm > /dev/null && echo "✓ Activo" || echo "✗ Inactivo"
-    
+
     echo -n "  Nginx:           "
     systemctl is-active nginx > /dev/null && echo "✓ Activo" || echo "✗ Inactivo"
-    
+
     echo -n "  Redis:           "
     systemctl is-active redis-server > /dev/null && echo "✓ Activo" || echo "✗ Inactivo"
-    
+
     echo -n "  Chrony:          "
     systemctl is-active chrony > /dev/null && echo "✓ Activo" || echo "✗ Inactivo"
-    
+
     echo -n "  Keepalived:      "
     systemctl is-active keepalived > /dev/null && echo "✓ Activo" || echo "✗ Inactivo"
-    
+
     echo ""
     echo "Próximos pasos:"
     echo "  1. Copiar el código de la app a: $APP_PATH"
@@ -519,7 +551,7 @@ print_summary() {
     echo "  4. Ejecutar migraciones: php artisan migrate"
     echo "  5. Verificar con: curl http://$NODE_IP/health"
     echo ""
-    
+
     log_success "=== INSTALACIÓN COMPLETADA ==="
 }
 
@@ -533,12 +565,12 @@ main() {
     echo -e "${BLUE}║ Setup Automatizado para Nodo                               ║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    
+
     check_root
     parse_arguments "$@"
-    
+
     log_info "Iniciando instalación para Nodo $NODE_ID ($NODE_IP)"
-    
+
     update_system
     configure_network
     install_dependencies
@@ -551,9 +583,9 @@ main() {
     configure_chrony
     configure_keepalived
     configure_supervisor
-    
+
     print_summary
-    
+
     log_success "Script de instalación finalizado con éxito"
     log_info "Logs guardados en: $LOG_FILE"
 }
