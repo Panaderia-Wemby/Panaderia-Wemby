@@ -28,7 +28,7 @@ NETWORK_INTERFACE=""
 MYSQL_PASSWORD="sdapppass"
 REDIS_PASSWORD="redispass"
 APP_PATH="/var/www/laravel"
-PHP_VERSION="8.2"
+PHP_VERSION="8.3"
 
 # Logs
 LOG_FILE="/var/log/sd-setup.log"
@@ -190,6 +190,15 @@ EOF
 install_dependencies() {
     log_info "=== FASE 3: Instalando dependencias ==="
 
+    # FIX 8: Ubuntu 24.04 (Noble) solo trae PHP 8.3 en su repo base y no
+    # incluye php8.2-* ni versiones anteriores. El PPA ondrej/php provee
+    # todas las versiones, por lo que se agrega antes de instalar cualquier
+    # paquete PHP para garantizar disponibilidad independientemente de la
+    # versión configurada en PHP_VERSION.
+    apt install -y software-properties-common
+    add-apt-repository -y ppa:ondrej/php
+    apt update
+
     apt install -y \
         nginx \
         php${PHP_VERSION}-fpm \
@@ -333,7 +342,7 @@ configure_mysql() {
 
     # Instala en los 3 nodos; la configuración del cluster Galera
     # (wsrep_cluster_address, etc.) debe hacerse manualmente después.
-    apt install -y software-properties-common
+    # software-properties-common ya fue instalado en la Fase 3.
 
     # Agregar repositorio MariaDB
     curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
