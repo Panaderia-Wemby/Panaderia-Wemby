@@ -231,7 +231,8 @@ install_composer() {
     log_info "=== FASE 4: Instalando Composer ==="
 
     if ! command -v composer &> /dev/null; then
-        curl -sS https://getcomposer.org/installer | php
+        # COMPOSER_ALLOW_SUPERUSER=1 evita el prompt interactivo "Continue as root?"
+        COMPOSER_ALLOW_SUPERUSER=1 curl -sS https://getcomposer.org/installer | php
         mv composer.phar /usr/local/bin/composer
         chmod +x /usr/local/bin/composer
     fi
@@ -345,7 +346,10 @@ configure_mysql() {
     # software-properties-common ya fue instalado en la Fase 3.
 
     # Agregar repositorio MariaDB
-    curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
+    # FIX 9: -L sigue la redirección 301 que devuelve downloads.mariadb.com;
+    # sin -L curl descargaba el HTML de la página de redirect, no el script.
+    curl -LsSo /tmp/mariadb_repo_setup https://downloads.mariadb.com/MariaDB/mariadb_repo_setup
+    bash /tmp/mariadb_repo_setup --mariadb-server-version="mariadb-10.11"
 
     apt update
     apt install -y mariadb-server galera-4
