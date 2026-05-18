@@ -2,7 +2,7 @@
 
 ################################################################################
 # Script de Deploy Rápido para Docker
-# 
+#
 # Uso:
 #   ./deploy-docker.sh build    # Construir imagen
 #   ./deploy-docker.sh up       # Levantar servicios
@@ -15,7 +15,7 @@
 set -e
 
 COMPOSE_FILE="docker-compose.yml"
-COMPOSE_CMD="docker-compose -f $COMPOSE_FILE"
+COMPOSE_CMD="docker compose -f $COMPOSE_FILE"
 
 # Colores
 GREEN='\033[0;32m'
@@ -71,7 +71,7 @@ seed() {
 fresh() {
     log_info "Reset completo..."
     down
-    $COMPOSE_CMD volume rm mysql_data redis_data -f || true
+    $COMPOSE_CMD down -v --remove-orphans
     log_info "Volúmenes eliminados, levantando nuevamente..."
     up
     migrate
@@ -101,19 +101,21 @@ tinker() {
 health() {
     log_info "Estado de servicios:"
     echo ""
-    
+
     # PHP-FPM
-    $COMPOSE_CMD exec app1 php -v | head -1 && echo -e "${GREEN}✓ PHP-FPM OK${NC}" || echo -e "${YELLOW}✗ PHP-FPM error${NC}"
-    
+    $COMPOSE_CMD exec app1 php artisan about --no-ansi > /dev/null 2>&1 && echo -e "${GREEN}✓ Nodo 1 OK${NC}" || echo -e "${YELLOW}✗ Nodo 1 error${NC}"
+    $COMPOSE_CMD exec app2 php artisan about --no-ansi > /dev/null 2>&1 && echo -e "${GREEN}✓ Nodo 2 OK${NC}" || echo -e "${YELLOW}✗ Nodo 2 error${NC}"
+    $COMPOSE_CMD exec app3 php artisan about --no-ansi > /dev/null 2>&1 && echo -e "${GREEN}✓ Nodo 3 OK${NC}" || echo -e "${YELLOW}✗ Nodo 3 error${NC}"
+
     # MySQL
     $COMPOSE_CMD exec mysql mysqladmin ping -h localhost > /dev/null 2>&1 && echo -e "${GREEN}✓ MySQL OK${NC}" || echo -e "${YELLOW}✗ MySQL error${NC}"
-    
+
     # Redis
     $COMPOSE_CMD exec redis redis-cli -a redispass ping > /dev/null 2>&1 && echo -e "${GREEN}✓ Redis OK${NC}" || echo -e "${YELLOW}✗ Redis error${NC}"
-    
+
     # Nginx
     $COMPOSE_CMD exec nginx wget -q -O- http://localhost/health > /dev/null 2>&1 && echo -e "${GREEN}✓ Nginx OK${NC}" || echo -e "${YELLOW}✗ Nginx error${NC}"
-    
+
     echo ""
 }
 

@@ -7,7 +7,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $venta->num_factura }}</title>
     <!-- Agregar Bootstrap desde CDN -->
-    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+    @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
+        @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+    @else
+        <link href="{{ asset('assets/css/layout.css') }}" rel="stylesheet" />
+        <link href="{{ asset('assets/css/font-awesome.min.css') }}" rel="stylesheet" />
+        <link href="{{ asset('assets/css/framework.css') }}" rel="stylesheet" />
+    @endif
 
     <style>
         /* Estilos personalizados */

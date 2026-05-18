@@ -8,7 +8,13 @@
     <!-- Bootstrap CSS -->
     <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous"> -->
 
-    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+    @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
+        @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+    @else
+        <link href="{{ asset('assets/css/layout.css') }}" rel="stylesheet" />
+        <link href="{{ asset('assets/css/font-awesome.min.css') }}" rel="stylesheet" />
+        <link href="{{ asset('assets/css/framework.css') }}" rel="stylesheet" />
+    @endif
 </head>
 <style>
     .bg-image-vertical {
@@ -81,7 +87,7 @@
                             <p>¿No tienes una cuenta? <a href="{{ route('register') }}" class="link-info">Creala
                                     ahora</a></p>
 
-                            
+
 
 
                             <!-- Modal Terminos -->

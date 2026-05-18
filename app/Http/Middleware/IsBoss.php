@@ -15,11 +15,20 @@ class IsBoss
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && Auth::user()->rol == 3) {
+        $user = Auth::user();
+
+        if (!$user) {
+            return redirect('/login');
+        }
+
+        if ((int) $user->rol === 3) {
             return $next($request);
-        }elseif(Auth::user()->rol == 1 || Auth::user()->rol == 2){
+        }
+
+        if ((int) $user->rol === 1 || (int) $user->rol === 2) {
             return redirect("/home");
         }
+
         return redirect("/login");
     }
 }

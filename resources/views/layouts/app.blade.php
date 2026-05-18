@@ -15,10 +15,12 @@
     <link href="{{ asset('assets/css/font-awesome.min.css') }}" rel="stylesheet" />
     <link href="{{ asset('assets/css/framework.css') }}" rel="stylesheet" />
     @yield('head')
-    <!-- Scripts -->
-    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 </head>
 @yield('style')
+
+@php
+    $user = Auth::user();
+@endphp
 
 <body id="top">
     <div class="wrapper row1">
@@ -56,14 +58,14 @@
                             </div>
                         </li>
                     @endguest
-                    @if (Auth::user() == null)
+                    @if ($user == null)
                         <li><a class="drop">Inventarios</a>
                             <ul>
                                 <li><a href="{{ route('insumos.index') }}">Inventarios de insumos</a></li>
                                 <li><a href="{{ route('productos.index') }}">Inventarios de productos</a></li>
                             </ul>
                         </li>
-                    @elseif (Auth::user()->rol == 2 || Auth::user()->rol == 3)
+                    @elseif ($user->rol == 2 || $user->rol == 3)
                         <li><a class="drop">Inventarios</a>
                             <ul>
                                 <li><a href="{{ route('insumos.index') }}">Inventarios de insumos</a></li>
@@ -71,12 +73,12 @@
                             </ul>
                         </li>
                     @endif
-                    @if (Auth::user() == null)
+                    @if ($user == null)
                         <li><a href="{{ route('ventas.index') }}">Ventas</a></li>
-                    @elseif (Auth::user()->rol == 1)
+                    @elseif ($user->rol == 1)
                         <li><a href="{{ route('ventas.index') }}">Ventas</a></li>
                     @endif
-                    @if (Auth::user() == null)
+                    @if ($user == null)
                         <li><a>Analisis y Reportes</a>
                             <ul>
                                 <li><a href="{{ route('graficos.ventas') }}">Generar Reporte</a></li>
@@ -84,7 +86,7 @@
                                 <li><a href="{{ route('form') }}">Generar Graficas</a></li>
                             </ul>
                         </li>
-                    @elseif (Auth::user()->rol == 3)
+                    @elseif ($user->rol == 3)
                         <li><a>Analisis y Reportes</a>
                             <ul>
                                 <li><a href="{{ route('graficos.ventas') }}">Generar Reporte</a></li>

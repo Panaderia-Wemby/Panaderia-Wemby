@@ -4,6 +4,7 @@ use App\Http\Controllers\AnalisisController;
 use App\Http\Controllers\FacturaController;
 use App\Http\Controllers\GraficosController;
 use App\Http\Controllers\InsumosController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProveedorController;
@@ -15,7 +16,12 @@ Route::get('/', function () {
 
 Auth::routes();
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'node' => config('distributed.node.id'),
+    ]);
+});
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
@@ -72,4 +78,4 @@ Route::get('/factura', function () {
     return view('layouts.factura');
 });
 
-// 
+//

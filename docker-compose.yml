@@ -1,53 +1,90 @@
-version: '3.9'
+x-app-env: &app-env
+  APP_NAME: "Panaderia-Wemby"
+  APP_ENV: production
+  APP_DEBUG: "false"
+  APP_URL: "http://localhost"
+  APP_KEY: "base64:+i8mPNFyWvBKsJp9LxKzQ0m3W2V5X8Y1Z4A7B0C3D6E="
+  DB_CONNECTION: mysql
+  DB_HOST: mysql
+  DB_PORT: 3306
+  DB_DATABASE: sd_app
+  DB_USERNAME: sdapp
+  DB_PASSWORD: sdapppass
+  CACHE_DRIVER: redis
+  SESSION_DRIVER: redis
+  QUEUE_CONNECTION: redis
+  REDIS_HOST: redis
+  REDIS_PASSWORD: redispass
+  REDIS_PORT: 6379
+  GRPC_HOST: "0.0.0.0"
+  GRPC_PORT: "50051"
+
+x-app-base: &app-base
+  build:
+    context: .
+    dockerfile: Dockerfile
+  ports:
+    - "9000"
+    - "50051"
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - sd_network
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD", "php", "artisan", "about", "--no-ansi"]
+    interval: 30s
+    timeout: 20s
+    retries: 3
 
 services:
   # ============================================================
   # NODO 1 - APP + PHP-FPM
   # ============================================================
   app1:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *app-base
     container_name: app-nodo1
     environment:
-      APP_NAME: "Panaderia-Wemby"
-      APP_ENV: production
-      APP_DEBUG: "false"
-      APP_URL: "http://localhost"
-      APP_KEY: "base64:+i8mPNFyWvBKsJp9LxKzQ0m3W2V5X8Y1Z4A7B0C3D6E="
-      DB_CONNECTION: mysql
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_DATABASE: sd_app
-      DB_USERNAME: sdapp
-      DB_PASSWORD: sdapppass
-      CACHE_DRIVER: redis
-      SESSION_DRIVER: redis
-      QUEUE_CONNECTION: redis
-      REDIS_HOST: redis
-      REDIS_PASSWORD: redispass
-      REDIS_PORT: 6379
-      GRPC_HOST: "0.0.0.0"
-      GRPC_PORT: "50051"
+      <<: *app-env
+      NODE_ID: nodo1
+      NODE_NAME: "Nodo 1"
+      GRPC_NODO1: app1:50051
+      GRPC_NODO2: app2:50051
+      GRPC_NODO3: app3:50051
     ports:
-      - "9000:9000"
+      - "9001:9000"
       - "50051:50051"
-    volumes:
-      - .:/var/www/html
-      - ./docker/php-fpm.conf:/usr/local/etc/php-fpm.d/www.conf:ro
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - sd_network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "php", "-v"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+
+  app2:
+    <<: *app-base
+    container_name: app-nodo2
+    environment:
+      <<: *app-env
+      NODE_ID: nodo2
+      NODE_NAME: "Nodo 2"
+      GRPC_NODO1: app1:50051
+      GRPC_NODO2: app2:50051
+      GRPC_NODO3: app3:50051
+    ports:
+      - "9002:9000"
+      - "50052:50051"
+
+  app3:
+    <<: *app-base
+    container_name: app-nodo3
+    environment:
+      <<: *app-env
+      NODE_ID: nodo3
+      NODE_NAME: "Nodo 3"
+      GRPC_NODO1: app1:50051
+      GRPC_NODO2: app2:50051
+      GRPC_NODO3: app3:50051
+    ports:
+      - "9003:9000"
+      - "50053:50051"
 
   # ============================================================
   # NGINX - Load Balancer / Reverse Proxy
@@ -59,11 +96,13 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - .:/var/www/html:ro
       - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./docker/laravel.conf:/etc/nginx/conf.d/laravel.conf:ro
+      - ./docker/laravel.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./public:/var/www/html/public:ro
     depends_on:
       - app1
+      - app2
+      - app3
     networks:
       - sd_network
     restart: unless-stopped
