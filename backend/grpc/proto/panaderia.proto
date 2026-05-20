@@ -1,0 +1,151 @@
+syntax = "proto3";
+
+package panaderia.v1;
+
+option java_multiple_files = true;
+option go_package = "panaderia/grpc/gen/panaderia/v1";
+
+message Empty {}
+
+message Category {
+  int32 id_categoria = 1;
+  string nombre_categoria = 2;
+}
+
+message Supplier {
+  int32 id_proveedor = 1;
+  string nombre = 2;
+  string contacto = 3;
+}
+
+message Supply {
+  int32 id_insumo = 1;
+  string nombre_insumo = 2;
+  int32 id_categoria = 3;
+  int32 stock = 4;
+}
+
+message Product {
+  int32 id_producto = 1;
+  string codigo_producto = 2;
+  string nombre = 3;
+  int32 id_categoria = 4;
+  double precio = 5;
+  int32 stock = 6;
+  repeated int32 proveedor_ids = 7;
+  repeated ProductSupply insumos = 8;
+}
+
+message ProductSupply {
+  int32 id_insumo = 1;
+  string nombre_insumo = 2;
+  int32 cantidad_usada = 3;
+}
+
+message SaleLine {
+  int32 id_producto = 1;
+  int32 cantidad = 2;
+  double precio_unitario = 3;
+}
+
+message Sale {
+  int32 id_venta = 1;
+  string num_factura = 2;
+  string fecha_venta = 3;
+  string documento_cliente = 4;
+  int32 id_cajero = 5;
+  double total_venta = 6;
+  repeated SaleLine detalle = 7;
+}
+
+message CreateProductRequest {
+  string codigo_producto = 1;
+  string nombre = 2;
+  int32 id_categoria = 3;
+  double precio = 4;
+  int32 stock = 5;
+}
+
+message UpdateStockRequest {
+  int32 id = 1;
+  int32 stock = 2;
+}
+
+message ProductListResponse {
+  repeated Product items = 1;
+}
+
+message SupplyListResponse {
+  repeated Supply items = 1;
+}
+
+message SupplierListResponse {
+  repeated Supplier items = 1;
+}
+
+message SaleListResponse {
+  repeated Sale items = 1;
+}
+
+message ReportSummary {
+  int32 total_sales = 1;
+  double total_revenue = 2;
+  int32 products_active = 3;
+  int32 low_stock_products = 4;
+  string top_category = 5;
+  string top_product = 6;
+}
+
+message AnalysisLine {
+  string text = 1;
+}
+
+message InvoiceRequest {
+  int32 sale_id = 1;
+}
+
+message InvoiceResponse {
+  Sale sale = 1;
+  repeated SaleLine lines = 2;
+  double total = 3;
+}
+
+service CatalogService {
+  rpc ListCategories(Empty) returns (stream Category);
+  rpc ListProducts(Empty) returns (ProductListResponse);
+  rpc CreateProduct(CreateProductRequest) returns (Product);
+  rpc UpdateProductStock(UpdateStockRequest) returns (Product);
+  rpc ListSupplies(Empty) returns (SupplyListResponse);
+  rpc ListSuppliers(Empty) returns (SupplierListResponse);
+}
+
+service SalesService {
+  rpc ListSales(Empty) returns (SaleListResponse);
+  rpc GetInvoice(InvoiceRequest) returns (InvoiceResponse);
+  rpc CreateSale(CreateSaleRequest) returns (CreateSaleResponse);
+  rpc UpdateSale(UpdateSaleRequest) returns (Sale);
+}
+
+service ReportingService {
+  rpc ListSales(Empty) returns (SaleListResponse);
+  rpc BuildAnalysis(Empty) returns (stream AnalysisLine);
+  rpc Summary(Empty) returns (ReportSummary);
+}
+
+message CreateSaleRequest {
+  string documento_cliente = 1;
+  int32 id_cajero = 2;
+  repeated SaleLine items = 3;
+  bool generate_invoice = 4;
+}
+
+message CreateSaleResponse {
+  Sale sale = 1;
+  bool invoice_generated = 2;
+}
+
+message UpdateSaleRequest {
+  int32 id_venta = 1;
+  string documento_cliente = 2;
+  repeated SaleLine items = 3;
+}
